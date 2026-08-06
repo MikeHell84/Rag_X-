@@ -1,0 +1,1605 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG Empresarial</title>
+<link rel="icon" type="image/x-icon" href="{% static 'api/favicon.ico' %}">
+<link rel="apple-touch-icon" href="{% static 'api/logo.png' %}">
+<style>
+:root{
+  --bg:#0f172a;
+  --bg-card:#1e293b;
+  --bg-card-hover:#273449;
+  --border:#334155;
+  --text:#e2e8f0;
+  --text-muted:#94a3b8;
+  --accent:#38bdf8;
+  --accent-dark:#0ea5e9;
+  --ok:#34d399;
+  --err:#f87171;
+  --warn:#fbbf24;
+  --shadow:0 10px 25px rgba(0,0,0,0.3);
+  --radius:14px;
+  --radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:linear-gradient(135deg,#0f172a 0%,#111827 100%);
+  color:var(--text);
+  min-height:100vh;
+}
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;
+  background:rgba(15,23,42,0.8);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(10px);
+  position:sticky;top:0;z-index:10;
+}
+header h1{
+  font-size:1.2rem;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:600;
+}
+header .brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+header .brand .logo-img{
+  width:38px;
+  height:38px;
+  border-radius:8px;
+}
+.status{
+  font-size:.8rem;
+  color:var(--text-muted);
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.status .pulse{
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--ok);
+  display:inline-block;
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{
+  0%,100%{opacity:1}
+  50%{opacity:.5}
+}
+main{
+  display:grid;
+  grid-template-columns:300px 340px 1fr;
+  gap:20px;
+  padding:24px;
+  max-width:100%;
+  width:100%;
+  margin:0;
+  align-items:start;
+}
+section{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px;
+  box-shadow:var(--shadow);
+}
+section h2{
+  font-size:.8rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--text-muted);
+  margin-bottom:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+section h2::before{
+  content:"";
+  width:4px;
+  height:16px;
+  background:var(--accent);
+  border-radius:2px;
+}
+
+/* Document panel */
+.doc-form{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.upload-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+#fileInput{
+  display:none;
+}
+.upload-btn{
+  background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+  color:#fff;
+  border:none;
+  padding:8px 18px;
+  border-radius:var(--radius-sm);
+  font-weight:600;
+  cursor:pointer;
+  transition:all .2s;
+  flex-shrink:0;
+}
+.upload-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(56,189,248,0.3);
+}
+.upload-btn:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+  transform:none;
+}
+.file-name{
+  font-size:.8rem;
+  color:var(--text-muted);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.doc-actions{
+  display:flex;
+  gap:8px;
+  margin-bottom:10px;
+}
+.btn{
+  border:none;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:6px 14px;
+  font-size:.8rem;
+  cursor:pointer;
+  background:var(--bg-card);
+  color:var(--text);
+  transition:all .2s;
+}
+.btn:hover{
+  background:var(--bg-card-hover);
+  border-color:var(--accent);
+}
+.btn.ghost{
+  background:rgba(15,23,42,0.5);
+  color:var(--text);
+}
+.btn.ghost:hover{
+  background:rgba(23,36,66,0.5);
+}
+.btn.danger{
+  border-color:var(--err);
+  color:var(--err);
+}
+.btn.danger:hover{
+  background:rgba(248,113,113,0.15);
+}
+.doc-search{
+  width:100%;
+  padding:8px 12px;
+  border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+  background:#0f172a;
+  color:var(--text);
+  font-size:.85rem;
+}
+.doc-search::placeholder{
+  color:var(--text-muted);
+}
+.doc-list{
+  margin-top:12px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.doc{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  padding:10px 12px;
+  background:#0f172a;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  font-size:.8rem;
+  transition:border-color .2s;
+}
+.doc:hover{
+  border-color:var(--border);
+}
+.doc .meta{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+  flex:1;
+}
+.doc .name{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--text);
+  font-weight:500;
+}
+.doc .meta-bottom{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.doc .tokens{
+  color:var(--text-muted);
+  font-size:.72rem;
+}
+.doc .err{
+  font-size:.66rem;
+  color:var(--err);
+  margin-top:3px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:100%;
+  cursor:help;
+}
+.doc-actions-bottom{
+  display:flex;
+  gap:4px;
+}
+.act{
+  font-size:.68rem;
+  padding:3px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  border:1px solid var(--border);
+  background:#0f172a;
+  color:var(--text);
+  transition:all .2s;
+}
+.act:hover{
+  transform:translateY(-1px);
+}
+.act.retry{
+  color:var(--warn);
+  border-color:var(--warn);
+}
+.act.retry:hover{
+  background:rgba(251,191,36,0.15);
+}
+.act.del{
+  color:var(--err);
+  border-color:var(--err);
+}
+.act.del:hover{
+  background:rgba(248,113,113,0.15);
+}
+.act:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+.chip{
+  font-size:.68rem;
+  padding:2px 10px;
+  border-radius:99px;
+  border:1px solid var(--border);
+  color:var(--text-muted);
+  white-space:nowrap;
+}
+.chip.ready{
+  color:var(--ok);
+  border-color:var(--ok);
+  background:rgba(52,211,153,0.15);
+}
+.chip.failed{
+  color:var(--err);
+  border-color:var(--err);
+  background:rgba(248,113,113,0.15);
+}
+.chip.pending,.chip.processing,.chip.chunked,.chip.embedded{
+  color:var(--warn);
+  border-color:var(--warn);
+  background:rgba(251,191,36,0.15);
+}
+.pagination{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  margin-top:10px;
+}
+.pagination button{
+  padding:4px 12px;
+  font-size:.75rem;
+  border:none;
+  border:1px solid var(--border);
+  border-radius:6px;
+  background:#0f172a;
+  color:var(--text);
+  cursor:pointer;
+}
+.pagination button:disabled{
+  opacity:.4;
+  cursor:not-allowed;
+}
+.pagination span{
+  font-size:.75rem;
+  color:var(--text-muted);
+  display:flex;
+  align-items:center;
+  padding:0 8px;
+}
+
+/* Chat panel */
+.chat-container{
+  display:flex;
+  flex-direction:column;
+  height:calc(100vh - 110px);
+  min-height:420px;
+}
+.query-controls{
+  display:flex;
+  gap:8px;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+  align-items:center;
+  padding:8px;
+  background:#0f172a;
+  border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+}
+.query-controls label{
+  font-size:.75rem;
+  color:var(--text-muted);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:4px;
+  white-space:nowrap;
+}
+.query-controls input[type="checkbox"]{
+  width:14px;
+  height:14px;
+  cursor:pointer;
+  accent-color:var(--accent);
+}
+.query-controls select{
+  padding:6px 10px;
+  font-size:.8rem;
+  border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+  background:#0f172a;
+  color:var(--text);
+  cursor:pointer;
+}
+.query-controls select:focus{
+  outline:none;
+  border-color:var(--accent);
+}
+.query-controls input[type="text"]{
+  padding:6px 10px;
+  font-size:.8rem;
+  border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+  background:#0f172a;
+  color:var(--text);
+}
+.stream-indicator{
+  font-size:.68rem;
+  padding:2px 10px;
+  border-radius:99px;
+  background:var(--warn);
+  color:#0b1220;
+  font-weight:600;
+}
+.msgs{
+  flex:1;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding-right:4px;
+}
+.msg{
+  max-width:85%;
+  padding:12px 16px;
+  border-radius:16px;
+  font-size:.92rem;
+  white-space:pre-wrap;
+  animation:fadeIn .3s ease;
+}
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.msg.user{
+  align-self:flex-end;
+  background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+  color:#0b1220;
+  border-bottom-right-radius:4px;
+  font-weight:500;
+}
+.msg.bot{
+  align-self:flex-start;
+  background:#0f172a;
+  border:1px solid var(--border);
+  border-bottom-left-radius:4px;
+}
+.msg.err{
+  align-self:flex-start;
+  background:#2a1216;
+  border:1px solid var(--err);
+  color:#fecaca;
+}
+.msg.typing{
+  color:var(--text-muted);
+  font-style:italic;
+  background:#0f172a;
+  border:1px solid var(--border);
+}
+.msg .feedback{
+  display:flex;
+  gap:6px;
+  margin-top:8px;
+  padding-top:8px;
+  border-top:1px solid var(--border);
+}
+.msg .feedback button{
+  background:none;
+  border:1px solid var(--border);
+  color:var(--text-muted);
+  padding:4px 10px;
+  border-radius:6px;
+  font-size:.7rem;
+  cursor:pointer;
+  transition:all .2s;
+}
+.msg .feedback button:hover{
+  color:var(--text);
+  border-color:var(--accent);
+}
+.msg .feedback button.active{
+  background:var(--ok);
+  border-color:var(--ok);
+  color:#0b1220;
+}
+.src{
+  font-size:.76rem;
+  padding:8px 10px;
+  background:#0b1220;
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--text-muted);
+  margin-top:6px;
+}
+.src b{
+  color:var(--text);
+}
+.meta-line{
+  font-size:.72rem;
+  color:var(--text-muted);
+  margin-top:8px;
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.meta-line span{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+}
+.input-row{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+}
+.input-row textarea{
+  flex:1;
+  resize:none;
+  min-height:52px;
+  padding:12px 16px;
+  border-radius:var(--radius);
+  border:1px solid var(--border);
+  background:#0f172a;
+  color:var(--text);
+  font-size:.9rem;
+  font-family:inherit;
+}
+.input-row textarea:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(56,189,248,0.15);
+}
+.send-btn{
+  background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+  color:#fff;
+  border:none;
+  padding:12px 24px;
+  border-radius:var(--radius);
+  font-weight:600;
+  cursor:pointer;
+  transition:all .2s;
+  align-self:flex-end;
+}
+.send-btn:hover:not(:disabled){
+  transform:translateY(-2px);
+  box-shadow:0 6px 16px rgba(56,189,248,0.35);
+}
+.send-btn:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+  transform:none;
+}
+@media(max-width:1240px){
+  main{
+    grid-template-columns:320px 1fr;
+  }
+  section:first-child{
+    grid-column:1 / -1;
+  }
+}
+@media(max-width:900px){
+  main{
+    grid-template-columns:1fr;
+    padding:14px;
+  }
+  .chat-container{
+    height:60vh;
+  }
+}
+.sessions-panel{
+  width:260px;
+  flex:0 0 260px;
+  background:#0f172a;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  display:flex;
+  flex-direction:column;
+  max-height:calc(100vh - 110px);
+  overflow:hidden;
+}
+.sessions-panel h3{
+  font-size:.8rem;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  margin:0;
+  padding:12px 14px 8px;
+  border-bottom:1px solid var(--border);
+}
+.session-filter{
+  padding:8px 10px;
+  border-bottom:1px solid var(--border);
+}
+.session-filter select{
+  width:100%;
+  padding:6px 10px;
+  font-size:.75rem;
+  border-radius:6px;
+  border:1px solid var(--border);
+  background:#0f172a;
+  color:var(--text);
+  cursor:pointer;
+}
+.session-list{
+  flex:1;
+  overflow-y:auto;
+  padding:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.session-item{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  padding:9px 11px;
+  border-radius:6px;
+  border:1px solid transparent;
+  background:transparent;
+  color:var(--text);
+  text-align:left;
+  cursor:pointer;
+  transition:background .12s,border-color .12s;
+}
+.session-item:hover{background:#1e293b;}
+.session-item.active{background:#1e293b;border-color:var(--accent);}
+.session-item .s-title{font-size:.82rem;font-weight:600;}
+.session-item .s-meta{font-size:.7rem;color:var(--text-muted);display:flex;gap:8px;align-items:center;}
+.session-item .s-actions{margin-left:auto;display:flex;gap:2px;opacity:0;transition:opacity .12s;}
+.session-item:hover .s-actions{opacity:1;}
+.s-act{background:none;border:none;cursor:pointer;font-size:.75rem;padding:1px 3px;border-radius:4px;line-height:1;}
+.s-act:hover{background:#334155;}
+.session-item .s-msgs{font-size:.7rem;color:var(--text-muted);}
+.session-panel-actions{padding:8px 10px;border-top:1px solid var(--border);display:flex;gap:6px;}
+.session-panel-actions .btn{flex:1;}
+.chat-layout{
+  display:flex;
+  gap:12px;
+  align-items:stretch;
+}
+.chat-layout .chat-container{flex:1;min-width:0;}
+.topic-manage{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.topic-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  max-height:320px;
+  overflow-y:auto;
+}
+.topic-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:6px;
+  border:1px solid var(--border);
+  background:#0f172a;
+  cursor:pointer;
+  transition:background .12s,border-color .12s;
+}
+.topic-item:hover{border-color:var(--accent);}
+.topic-item.active{background:#1e293b;border-color:var(--accent);}
+.topic-item .t-name{flex:1;font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.topic-item .t-count{font-size:.68rem;color:var(--text-muted);white-space:nowrap;}
+.topic-item .t-actions{display:flex;gap:2px;opacity:0;transition:opacity .12s;}
+.topic-item:hover .t-actions{opacity:1;}
+.s-act{background:none;border:none;cursor:pointer;font-size:.75rem;padding:1px 3px;border-radius:4px;line-height:1;}
+.topic-empty{color:var(--text-muted);font-size:.75rem;padding:8px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img src="{% static 'api/logo.png' %}" alt="Logo RAG Empresarial" class="logo-img">
+    <h1>Asistente RAG Empresarial</h1>
+  </div>
+  <span class="status">
+    <span class="pulse" id="healthDot"></span>
+    <span id="healthText">Comprobando sistema…</span>
+  </span>
+</header>
+<main>
+  <section>
+    <h2>Temas</h2>
+    <div class="topic-manage">
+      <div class="upload-row">
+        <input type="text" id="newTopicName" placeholder="Nombre del tema nuevo…" style="flex:1;min-width:0;">
+        <button type="button" class="upload-btn" id="createTopicBtn">Crear tema</button>
+      </div>
+      <div class="topic-list" id="topicList"></div>
+    </div>
+  </section>
+  <section>
+    <h2>Documentos</h2>
+    <div class="doc-form">
+      <div class="upload-row">
+        <label class="q-label" for="uploadTopic">Tema:</label>
+        <select id="uploadTopic" style="flex:1;min-width:0;"></select>
+        <input type="text" id="uploadNewTopic" placeholder="O escribe un tema nuevo…" style="flex:1;min-width:0;" disabled>
+      </div>
+      <div class="upload-row">
+        <input type="file" name="file" id="fileInput" accept=".pdf,.docx,.md,.txt">
+        <button type="button" class="upload-btn" id="uploadBtn">
+          Subir documento
+        </button>
+        <span class="file-name" id="fileNameDisplay"></span>
+      </div>
+      <div class="upload-row">
+        <input type="url" id="urlInput" placeholder="https://ejemplo.com/pagina" class="doc-search" style="flex:1;min-width:0;">
+        <button type="button" class="upload-btn" id="urlBtn">
+          Agregar link
+        </button>
+      </div>
+      <div class="doc-actions">
+        <input type="text" id="docSearch" class="doc-search" placeholder="Buscar por título…">
+        <button type="button" class="btn btn-ghost" id="reindexBtn">Reindexar todo</button>
+        <button type="button" class="btn btn-danger" id="clearDataBtn" title="Eliminar todos los documentos, conversaciones y logs">Limpiar datos</button>
+      </div>
+      <div class="doc-list" id="docList"></div>
+      <div class="pagination" id="docPagination"></div>
+    </div>
+  </section>
+  <section>
+    <h2>Consulta tus documentos</h2>
+    <div class="chat-layout">
+      <div class="sessions-panel">
+        <h3>Sesiones</h3>
+        <div class="session-filter">
+          <select id="sessionTopicFilter">
+            <option value="">Todos los temas</option>
+          </select>
+        </div>
+        <div class="session-list" id="sessionList"></div>
+        <div class="session-panel-actions">
+          <button type="button" class="btn btn-ghost" id="saveSessionBtn" title="Guardar o cambiar nombre a la sesión activa">Guardar nombre</button>
+          <button type="button" class="btn btn-ghost" id="newSessionBtn">Nueva sesión</button>
+        </div>
+      </div>
+      <div class="chat-container">
+      <div class="query-controls">
+        <label><input type="checkbox" id="useStream"> <span class="stream-indicator">SSE</span> Streaming</label>
+        <label><input type="checkbox" id="useHistory" checked> Historial</label>
+        <label>
+          Tema:
+          <select id="topicInput">
+            <option value="">Todos</option>
+          </select>
+        </label>
+        <label>
+          Asistente:
+          <select id="agentSelector">
+            <option value="">Auto (predeterminado)</option>
+          </select>
+        </label>
+        <label>
+          Filtrar docs:
+          <select id="docFilter" multiple style="min-width:160px;height:auto;"></select>
+        </label>
+      </div>
+      <div class="msgs" id="msgs">
+        <div class="msg bot">
+          Hola. Sube documentación y haz preguntas sobre ella.
+          <br><br>
+          La respuesta incluirá las fuentes consultadas, el costo del proceso y el modelo utilizado.
+          <br><br>
+          Usa <b>Streaming</b> para recibir la respuesta en tiempo real, y cambia de <b>Asistente</b> para probar diferentes modelos de IA.
+        </div>
+      </div>
+      <div class="input-row">
+        <textarea id="qInput" placeholder="Escribe tu pregunta…" rows="2"></textarea>
+        <button class="send-btn" id="sendBtn">Preguntar</button>
+      </div>
+    </div>
+    </div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let polling=false;
+let eventSource=null;
+let conversationHistory=[];
+let currentTaskId=null;
+let availableAgents=[];
+let sessionKey = localStorage.getItem('rag_session_key') || '';
+if(!sessionKey){sessionKey='session_'+(Date.now().toString(36))+Math.random().toString(36).slice(2,8);localStorage.setItem('rag_session_key',sessionKey);}
+
+async function health(){
+  try{
+    const r=await fetch('/api/health/');
+    const d=await r.json();
+    $('healthDot').style.background=d.status==='ok'?'var(--ok)':'var(--err)';
+    $('healthText').textContent='DB: '+d.database+' · Redis: '+d.redis+' · Vector DB: '+(d.vector_embeddings||0)+' embeddings';
+  }catch(e){
+    $('healthDot').style.background='var(--err)';
+    $('healthText').textContent='Sistema no disponible';
+  }
+}
+
+function chipFor(s){
+  const labels={'ready':'Listo','failed':'Fallido','pending':'Pendiente','processing':'Procesando','chunked':'Fragmentado','embedded':'Embebido'};
+  return '<span class="chip '+s+'">'+(labels[s]||s)+'</span>';
+}
+
+let docPage=1, docPageSize=20, docTotal=0;
+
+async function loadDocs(){
+  try{
+    const topic=$('topicInput').value;
+    const url='/api/documents/?page='+docPage+'&page_size='+docPageSize+(topic?'&topic='+encodeURIComponent(topic):'');
+    const r=await fetch(url);
+    const d=await r.json();
+    docTotal=d.count;
+    const list=(d.results||[]);
+    if(!list.length){
+      $('docList').innerHTML='<div class="doc" style="color:var(--text-muted);justify-content:center">'+(topic?'No hay documentos de este tema aún':'No hay documentos aún')+'</div>';
+      const sel=$('docFilter');
+      sel.innerHTML='';
+    }else{
+      $('docList').innerHTML=list.map(x=>{
+        const err=x.error_message?'<span class="err" title="'+esc(x.error_message)+'">⚠ '+esc(x.error_message)+'</span>':'';
+        const retry=x.status==='failed'?'<button class="act retry" data-retry="'+x.id+'">Reintentar</button>':'';
+        return '<div class="doc">'+
+          '<div class="meta">'+
+            '<span class="name">'+esc(x.title)+'</span>'+
+            '<div class="meta-bottom">'+
+              '<span class="tokens">'+x.total_chunks+' chunks · '+x.total_tokens+' tokens</span>'+
+              err+
+            '</div>'+
+          '</div>'+
+          '<div class="actions">'+
+            retry+
+            '<button class="act del" data-del="'+x.id+'">Borrar</button>'+
+          '</div>'+
+          chipFor(x.status)+
+        '</div>';
+      }).join('');
+      $('docList').querySelectorAll('[data-retry]').forEach(b=>b.addEventListener('click',()=>retryDoc(b)));
+      $('docList').querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>deleteDoc(b)));
+      const sel=$('docFilter');
+      sel.innerHTML=list.map(x=>'<option value="'+x.id+'">'+esc(x.title)+'</option>').join('');
+      Array.from(sel.options).forEach(o=>o.selected=true);
+    }
+    const totalPages=Math.ceil(docTotal/docPageSize);
+    $('docPagination').innerHTML=totalPages<=1?'':
+      '<button '+(docPage===1?'disabled':'')+' onclick="goDocPage('+(docPage-1)+')">‹ Ant</button>'+
+      '<span>Pág '+docPage+' / '+totalPages+'</span>'+
+      '<button '+(docPage===totalPages?'disabled':'')+' onclick="goDocPage('+(docPage+1)+')">Sig ›</button>';
+    if(list.some(x=>['pending','processing','chunked','embedded'].includes(x.status))){
+      setTimeout(loadDocs,3000);
+    }
+  }catch(e){}
+}
+
+function goDocPage(p){docPage=p;loadDocs();}
+function esc(s){
+  const d=document.createElement('div');d.textContent=s;return d.innerHTML;
+}
+
+function addMsg(html,cls,extra={}){
+  const div=document.createElement('div');div.className='msg '+cls;div.innerHTML=html;
+  if(extra.query_id){
+    const fb=document.createElement('div');fb.className='feedback';
+    fb.innerHTML='<button class="up" data-qid="'+extra.query_id+'" title="Útil">👍</button><button class="down" data-qid="'+extra.query_id+'" title="No útil">👎</button>';
+    fb.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>sendFeedback(btn)));
+    div.appendChild(fb);
+  }
+  $('msgs').appendChild(div);
+  $('msgs').scrollTop=$('msgs').scrollHeight;
+  return div;
+}
+
+async function sendFeedback(btn){
+  const qid=btn.dataset.qid, val=btn.classList.contains('up')?'up':'down';
+  btn.disabled=true;
+  try{
+    const r=await fetch('/api/query-logs/'+qid+'/feedback/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({feedback:val})
+    });
+    if(r.ok){
+      btn.parentNode.querySelectorAll('button').forEach(b=>{b.classList.remove('active');b.disabled=true;});
+      btn.classList.add('active');
+    }else{btn.disabled=false;}
+  }catch(e){btn.disabled=false;}
+}
+
+async function retryDoc(btn){
+  btn.disabled=true;btn.textContent='Reintentando…';
+  try{
+    const r=await fetch('/api/documents/'+btn.dataset.retry+'/retry/',{method:'POST'});
+    const d=await r.json();
+    if(r.ok){addMsg('Reintentando ingesta…','bot');loadDocs();}
+    else{addMsg('Error al reintentar: '+(d.error||r.status),'err');}
+  }catch(e){addMsg('Error de red al reintentar.','err');}
+  loadDocs();
+}
+
+async function deleteDoc(btn){
+  if(!confirm('¿Borrar el documento y sus chunks/embeddings?'))return;
+  btn.disabled=true;btn.textContent='Borrando…';
+  try{
+    const r=await fetch('/api/documents/'+btn.dataset.del+'/',{method:'DELETE'});
+    if(r.ok){addMsg('Documento borrado.','bot');loadDocs();}
+    else{const d=await r.json().catch(()=>({}));addMsg('Error al borrar: '+(d.error||r.status),'err');}
+  }catch(e){addMsg('Error de red al borrar.','err');}
+  loadDocs();
+}
+
+async function reindexAll(){
+  if(!confirm('¿Reindexar TODOS los documentos?\nSe eliminarán los chunks y embeddings previos.'))return;
+  const btn=$('reindexBtn');btn.disabled=true;btn.textContent='Reindexando…';
+  try{
+    const r=await fetch('/api/documents/reindex/',{method:'POST'});
+    const d=await r.json();
+    addMsg('Reindexando '+d.queued+' documentos…','bot');
+    loadDocs();
+  }catch(e){addMsg('Error al reindexar.','err');}
+  finally{btn.disabled=false;btn.textContent='Reindexar todo';}
+}
+
+async function clearAllData(){
+  const confirmed=confirm('⚠ ¿ESTÁS SEGURO?\n\nEsto borrará TODOS los documentos, conversaciones, logs y embeddings.\nEsta acción NO se puede deshacer.');
+  if(!confirmed){return;}
+  const confirmation=prompt('Escribe "yes" para confirmar:');
+  if(confirmation!== 'yes'){return;}
+  const btn=$('clearDataBtn');btn.disabled=true;btn.textContent='Limpiando…';
+  try{
+    const r=await fetch('/api/cleanup/?confirm=yes',{method:'DELETE'});
+    const d=await r.json();
+    if(r.ok){
+      addMsg('Datos eliminados correctamente. La base de conocimiento ha sido limpiada.','bot');
+      conversationHistory=[];
+      currentConversationId=null;
+      loadDocs();
+      loadAgents();
+    }else{
+      addMsg('Error al limpiar: '+(d.error||r.status),'err');
+    }
+  }catch(e){addMsg('Error de red al limpiar.','err');}
+  finally{btn.disabled=false;btn.textContent='Limpiar datos';}
+}
+
+async function upload(){
+  const f=$('fileInput').files[0];if(!f)return;
+  $('fileNameDisplay').textContent=f.name;
+  _('uploadBtn').disabled=true;_('uploadBtn').textContent='Subiendo…';
+  const fd=new FormData();fd.append('file',f);
+  const topic=resolveUploadTopic();
+  if(topic)fd.append('topic',topic);
+  try{
+    const r=await fetch('/api/documents/upload/',{method:'POST',body:fd});
+    const d=await r.json();
+    if(r.status===409){
+      addMsg('Documento ya indexado (id '+d.id+'). Si falló, usa «Reintentar».','err');
+    }else if(r.status===202){
+      addMsg('Encolada la ingesta de <b>'+esc(f.name)+'</b>','bot');
+    }else{
+      addMsg('Error: '+(d.error||r.status),'err');
+    }
+    loadDocs();
+    loadTopics();
+  }catch(err){addMsg('Error de red al subir.','err');}
+  finally{
+    $('uploadBtn').disabled=false;_('uploadBtn').textContent='Subir documento';
+    $('fileInput').value='';_('fileNameDisplay').textContent='';
+  }
+}
+
+function _(id){return document.getElementById(id);}
+
+async function addUrl(){
+  const url=$('urlInput').value.trim();if(!url)return;
+  _('urlBtn').disabled=true;_('urlBtn').textContent='Agregando…';
+  const topic=resolveUploadTopic();
+  try{
+    const r=await fetch('/api/documents/from-url/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,topic})});
+    const d=await r.json();
+    if(r.status===409){
+      addMsg('Ese link ya está indexado (id '+d.id+').','err');
+    }else if(r.status===202){
+      addMsg('Agregado y encolada la ingesta de <b>'+esc(d.title||url)+'</b>','bot');
+    }else{
+      addMsg('Error: '+(d.error||r.status),'err');
+    }
+    loadDocs();
+    loadTopics();
+  }catch(err){addMsg('Error de red al agregar el link.','err');}
+  finally{
+    _('urlBtn').disabled=false;_('urlBtn').textContent='Agregar link';
+    $('urlInput').value='';
+  }
+}
+
+function renderResult(res){
+  const ans=addMsg(esc(res.answer||''),'bot',{query_id:res.query_id});
+  if(res.sources&&res.sources.length){
+    const html=res.sources.map(s=>
+      '<div class="src"><b>📄 '+esc(s.document||'')+'</b>'+
+      (s.section?' · '+esc(s.section):'')+
+      (s.page?' · pág. '+s.page:'')+
+      (s.rrf_score?' · RRF '+s.rrf_score:'')+
+      '</div>'
+    ).join('');
+    addMsg('<b>Fuentes consultadas:</b>'+html,'bot');
+  }
+  if(res.tokens_prompt!==undefined){
+    addMsg(
+      '<div class="meta-line">'+
+      '🤖 '+esc(res.model||'')+
+      ' · 📥 '+res.tokens_prompt+' tokens'+
+      ' · 📤 '+res.tokens_completion+' tokens'+
+      ' · 💰 $'+(res.cost_usd||0)+' '+
+      ' · ⏱ '+(res.latency_ms||0)+'ms'+
+      '</div>','bot');
+  }
+}
+
+let typingDiv=null;
+
+function showTyping(stageText){
+  if(typingDiv){typingDiv.remove();}
+  typingDiv=addMsg(stageText||'Buscando y generando…','typing');
+  typingDiv.id='typing-msg';
+  $('msgs').scrollTop=$('msgs').scrollHeight;
+}
+
+function hideTyping(){
+  if(typingDiv){typingDiv.remove();typingDiv=null;}
+}
+
+function connectSSE(taskId){
+  if(eventSource){eventSource.close();}
+  eventSource=new EventSource('/api/query/'+taskId+'/stream/');
+  eventSource.onmessage=e=>{
+    try{
+      const p=JSON.parse(e.data);
+      handleSSE(p);
+    }catch(err){}
+  };
+  eventSource.onerror=()=>{eventSource.close();};
+}
+
+function handleSSE(payload){
+  if(payload.event==='stage'){
+    if(typingDiv)typingDiv.textContent=stageLabels[payload.data.stage]||payload.data.stage;
+  }else if(payload.event==='done'){
+    hideTyping();
+    renderResult(payload.data);
+    if($('useHistory').checked){
+      conversationHistory.push({role:'assistant',content:payload.data.answer||''});
+      saveMessage('assistant',payload.data.answer||'');
+    }
+    finishQuery();
+  }else if(payload.event==='error'){
+    hideTyping();
+    addMsg('Error: '+(payload.data.error||''),'err');
+    finishQuery();
+  }
+}
+
+const stageLabels={
+  'iniciando':'Iniciando…',
+  'buscando':'Buscando en documentos…',
+  'reordenando':'Reordenando resultados…',
+  'generando':'Generando respuesta…'
+};
+
+function finishQuery(){
+  polling=false;
+  $('sendBtn').disabled=false;
+  $('qInput').focus();
+  if(eventSource){eventSource.close();eventSource=null;}
+}
+
+let currentConversationId=null;
+
+async function loadOrCreateConversation(){
+  const topic=($('topicInput').value.trim()||'general').toLowerCase();
+  const agentId=$('agentSelector').value;
+  if(!topic && !agentId){currentConversationId=null;conversationHistory=[];return;}
+  try{
+    const params=new URLSearchParams();
+    params.set('topic',topic);
+    params.set('session',sessionKey);
+    if(agentId)params.set('agent_id',agentId);
+    const r=await fetch('/api/conversations/?'+params.toString());
+    const d=await r.json();
+    if(d.count>0){
+      currentConversationId=d.results[0].id;
+      conversationHistory=d.results[0].messages.map(m=>({role:m.role,content:m.content}));
+    }else{
+      const createData={topic:topic,session_key:sessionKey};
+      if(agentId)createData.agent=parseInt(agentId);
+      const cr=await fetch('/api/conversations/',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(createData)
+      });
+      const cd=await cr.json();
+      currentConversationId=cd.id;
+      conversationHistory=[];
+    }
+    // Refresh messages display
+    const msgsDiv=$('msgs');
+    msgsDiv.innerHTML='';
+    conversationHistory.forEach(m=>{
+      addMsg(esc(m.content),m.role==='user'?'user':'bot');
+    });
+    if(currentConversationId)markActiveSession(currentConversationId);
+    loadSessions();
+  }catch(e){
+    console.error('Error loading conversation:',e);
+    currentConversationId=null;
+    conversationHistory=[];
+  }
+}
+
+async function saveMessage(role,content){
+  if(!currentConversationId)return;
+  try{
+    await fetch('/api/conversations/'+currentConversationId+'/messages/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({role:role,content:content})
+    });
+  }catch(e){}
+}
+
+async function switchTopicOrAgent(){
+  // Save current conversation state before switching
+  if(currentConversationId && conversationHistory.length){
+    await saveMessage('assistant',conversationHistory[conversationHistory.length-1].content||'');
+  }
+  await loadOrCreateConversation();
+  loadSessions();
+  docPage=1;
+  loadDocs();
+}
+
+function setCurrentConversation(conv){
+  currentConversationId=conv.id;
+  conversationHistory=(conv.messages||[]).map(m=>({role:m.role,content:m.content}));
+  if(conv.topic)$('topicInput').value=conv.topic;
+  if(conv.agent) $('agentSelector').value=String(conv.agent);
+  const msgsDiv=$('msgs');
+  msgsDiv.innerHTML='';
+  conversationHistory.forEach(m=>{
+    addMsg(esc(m.content),m.role==='user'?'user':'bot');
+  });
+}
+
+async function openSession(id){
+  try{
+    const r=await fetch('/api/conversations/'+id+'/');
+    if(!r.ok){addMsg('No se pudo abrir la sesión.','err');return;}
+    const conv=await r.json();
+    setCurrentConversation(conv);
+    markActiveSession(id);
+  }catch(e){
+    addMsg('Error al abrir la sesión.','err');
+  }
+}
+
+async function loadSessions(){
+  try{
+    let url='/api/conversations/?session='+encodeURIComponent(sessionKey);
+    const ft=$('sessionTopicFilter');
+    if(ft&&ft.value)url+='&topic='+encodeURIComponent(ft.value);
+    const r=await fetch(url);
+    const d=await r.json();
+    const list=$('sessionList');
+    if(!d.results || d.results.length===0){
+      list.innerHTML='<div style="padding:10px;font-size:.75rem;color:var(--text-muted)">'+(ft&&ft.value?'No hay sesiones de este tema.':'Aún no hay sesiones. Haz una pregunta para crear la primera.')+'</div>';
+      return;
+    }
+    list.innerHTML=d.results.map(c=>{
+      const title=c.title||c.topic||('Sesión #'+c.id);
+      const last=c.messages&&c.messages.length?c.messages[c.messages.length-1].content:'';
+      return '<div class="session-item" id="sessionItem-'+c.id+'" data-id="'+c.id+'">'+
+        '<span class="s-title">'+esc(title)+'</span>'+
+        '<span class="s-meta"><span>'+esc(c.topic||'general')+'</span>'+
+          '<span class="s-actions">'+
+            '<button type="button" class="s-act" data-act="rename" data-id="'+c.id+'" title="Renombrar">✏️</button>'+
+            '<button type="button" class="s-act" data-act="export" data-id="'+c.id+'" title="Exportar">⬇️</button>'+
+            '<button type="button" class="s-act" data-act="duplicate" data-id="'+c.id+'" title="Duplicar">📄</button>'+
+            '<button type="button" class="s-act" data-act="delete" data-id="'+c.id+'" title="Eliminar">🗑️</button>'+
+          '</span></span>'+
+        '<span class="s-msgs">'+esc(last.slice(0,50))+'</span>'+
+      '</div>';
+    }).join('');
+    list.querySelectorAll('.session-item').forEach(el=>{
+      el.addEventListener('click',(e)=>{
+        if(e.target.closest('.s-act'))return;
+        openSession(parseInt(el.dataset.id));
+      });
+      el.querySelectorAll('.s-act').forEach(btn=>{
+        btn.addEventListener('click',(e)=>{
+          e.stopPropagation();
+          if(btn.dataset.act==='rename')renameSession(parseInt(btn.dataset.id));
+          else if(btn.dataset.act==='export')exportSession(parseInt(btn.dataset.id));
+          else if(btn.dataset.act==='duplicate')duplicateSession(parseInt(btn.dataset.id));
+          else if(btn.dataset.act==='delete')confirmDeleteSession(parseInt(btn.dataset.id));
+        });
+      });
+    });
+  }catch(e){
+    console.error('Error loading sessions:',e);
+  }
+}
+
+function markActiveSession(id){
+  const list=$('sessionList');
+  if(!list)return;
+  list.querySelectorAll('.session-item').forEach(el=>{
+    el.classList.toggle('active',el.dataset.id===String(id));
+  });
+}
+
+function newSession(){
+  if(currentConversationId && conversationHistory.length){
+    saveMessage('assistant',conversationHistory[conversationHistory.length-1].content||'');
+  }
+  conversationHistory=[];
+  currentConversationId=null;
+  const msgsDiv=$('msgs');
+  msgsDiv.innerHTML='';
+  addMsg('Nueva sesión iniciada. Escribe tu primera pregunta.','bot');
+  $('sessionList').querySelectorAll('.session-item').forEach(el=>el.classList.remove('active'));
+}
+
+async function renameSession(id){
+  const item=$('sessionItem-'+id);
+  const title=(item&&item.querySelector('.s-title'))?item.querySelector('.s-title').textContent.trim():'';
+  const nuevo=prompt('Nuevo título para la sesión:',title);
+  if(nuevo===null)return;
+  const name=nuevo.trim();
+  try{
+    const r=await fetch('/api/conversations/'+id+'/',{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title:name})
+    });
+    if(!r.ok){alert('No se pudo renombrar la sesión.');return;}
+    if(currentConversationId===id)$('sessionList');// noop
+    loadSessions();
+  }catch(e){alert('Error al renombrar la sesión.');}
+}
+
+async function saveSession(){
+  if(!currentConversationId){addMsg('Selecciona o crea una sesión primero.','err');return;}
+  const item=$('sessionItem-'+currentConversationId);
+  const cur=(item&&item.querySelector('.s-title'))?item.querySelector('.s-title').textContent.trim():'';
+  const name=prompt('Nombre para la sesión:',cur);
+  if(name===null)return;
+  const t=name.trim();
+  try{
+    const r=await fetch('/api/conversations/'+currentConversationId+'/',{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title:t})
+    });
+    if(!r.ok){addMsg('No se pudo guardar el nombre.','err');return;}
+    addMsg('Sesión guardada como <b>'+esc(t)+'</b>','bot');
+    loadSessions();
+  }catch(e){addMsg('Error al guardar el nombre.','err');}
+}
+
+function confirmDeleteSession(id){
+  if(!confirm('¿Eliminar esta sesión y todos sus mensajes?'))return;
+  deleteSession(id);
+}
+
+async function deleteSession(id){
+  try{
+    const r=await fetch('/api/conversations/'+id+'/',{method:'DELETE'});
+    if(!r.ok){alert('No se pudo eliminar la sesión.');return;}
+    if(currentConversationId===id){
+      currentConversationId=null;
+      conversationHistory=[];
+      $('msgs').innerHTML='';
+      addMsg('Sesión eliminada. Escribe una pregunta para crear una nueva.','bot');
+    }
+    loadSessions();
+  }catch(e){alert('Error al eliminar la sesión.');}
+}
+
+async function exportSession(id){
+  try{
+    const r=await fetch('/api/conversations/'+id+'/');
+    if(!r.ok){alert('No se pudo exportar la sesión.');return;}
+    const c=await r.json();
+    const title=c.title||c.topic||('Sesión #'+c.id);
+    const lines=[
+      'Asistente RAG Empresarial - Exportación de sesión',
+      'Título: '+title,
+      'Tema: '+(c.topic||'general'),
+      'Agente: '+(c.agent_name||'auto')+' ('+(c.agent_model||'—')+')',
+      'Creada: '+c.created_at,
+      'Mensajes: '+(c.messages||[]).length,
+      '----------------------------------------',
+      ''
+    ];
+    (c.messages||[]).forEach(m=>{
+      lines.push((m.role==='user'?'USUARIO':'ASISTENTE')+':');
+      lines.push(m.content);
+      lines.push('');
+    });
+    const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='sesion-'+id+'-'+Date.now()+'.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  }catch(e){alert('Error al exportar la sesión.');}
+}
+
+async function duplicateSession(id){
+  try{
+    const r=await fetch('/api/conversations/'+id+'/');
+    if(!r.ok){alert('No se pudo duplicar la sesión.');return;}
+    const c=await r.json();
+    const createData={
+      title:(c.title?c.title+' (copia)':''),
+      topic:c.topic||'general',
+      session_key:sessionKey
+    };
+    if(c.agent)createData.agent=c.agent;
+    const cr=await fetch('/api/conversations/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(createData)
+    });
+    if(!cr.ok){alert('No se pudo duplicar la sesión.');return;}
+    const created=await cr.json();
+    for(const m of (c.messages||[])){
+      await fetch('/api/conversations/'+created.id+'/messages/',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({role:m.role,content:m.content})
+      });
+    }
+    loadSessions();
+    openSession(created.id);
+  }catch(e){alert('Error al duplicar la sesión.');}
+}
+
+async function loadAgents(){
+  try{
+    const r=await fetch('/api/chat-agents/');
+    const d=await r.json();
+    availableAgents=d;
+    const sel=$('agentSelector');
+    sel.innerHTML='<option value="">Auto (predeterminado)</option>'+
+      d.map(a=>
+        '<option value="'+a.id+'">'+esc(a.name)+' � '+esc(a.provider)+'/'+esc(a.model)+'</option>'
+      ).join('');
+  }catch(e){
+    console.error('Error loading agents:',e);
+  }
+}
+
+async function loadTopics(){
+  try{
+    const r=await fetch('/api/topics/');
+    const d=await r.json();
+    const topics=d.topics||[];
+    const sel=$('topicInput');
+    const current=sel.value;
+    sel.innerHTML='<option value="">Todos</option>'+
+      topics.map(t=>'<option value="'+esc(t.name)+'">'+esc(t.name)+'</option>').join('');
+    sel.value=current;
+    const ut=$('uploadTopic');
+    if(ut){
+      const utCurrent=ut.value;
+      ut.innerHTML='<option value="">(sin tema)</option>'+
+        topics.map(t=>'<option value="'+esc(t.name)+'">'+esc(t.name)+'</option>').join('')+
+        '<option value="__new__">➕ Crear tema nuevo…</option>';
+      ut.value=utCurrent;
+    }
+    const stf=$('sessionTopicFilter');
+    if(stf){
+      const stfCurrent=stf.value;
+      stf.innerHTML='<option value="">Todos los temas</option>'+
+        topics.map(t=>'<option value="'+esc(t.name)+'">'+esc(t.name)+'</option>').join('');
+      stf.value=stfCurrent;
+    }
+    renderTopicList(topics);
+  }catch(e){
+    console.error('Error loading topics:',e);
+  }
+}
+
+function renderTopicList(topics){
+  const list=$('topicList');
+  if(!list)return;
+  if(!topics.length){
+    list.innerHTML='<div class="topic-empty">Aún no hay temas. Crea el primero con el botón «Crear tema».</div>';
+    return;
+  }
+  list.innerHTML=topics.map(t=>{
+    const hasId=t.id!==null&&t.id!==undefined;
+    const actions=hasId
+      ?'<span class="t-actions">'+
+          '<button type="button" class="s-act" data-act="t-rename" data-id="'+t.id+'" title="Renombrar">✏️</button>'+
+          '<button type="button" class="s-act" data-act="t-select" data-id="'+t.id+'" title="Seleccionar en chat">🔍</button>'+
+          '<button type="button" class="s-act" data-act="t-delete" data-id="'+t.id+'" title="Eliminar tema">🗑️</button>'+
+        '</span>'
+      :'<span class="t-actions">'+
+          '<button type="button" class="s-act" data-act="t-select" data-name="'+esc(t.name)+'" title="Seleccionar en chat">🔍</button>'+
+        '</span>';
+    return '<div class="topic-item" id="topicItem-'+t.name+'" data-id="'+t.id+'" data-name="'+esc(t.name)+'">'+
+      '<span class="t-name">'+esc(t.name)+'</span>'+
+      '<span class="t-count">'+t.document_count+' docs</span>'+
+      actions+
+    '</div>';
+  }).join('');
+  list.querySelectorAll('.topic-item').forEach(el=>{
+    el.querySelectorAll('.s-act').forEach(btn=>{
+      btn.addEventListener('click',(e)=>{
+        e.stopPropagation();
+        if(btn.dataset.act==='t-rename'&&btn.dataset.id)renameTopic(parseInt(btn.dataset.id));
+        else if(btn.dataset.act==='t-select')selectTopic(btn.dataset.id!=null?parseInt(btn.dataset.id):null,btn.dataset.name);
+        else if(btn.dataset.act==='t-delete'&&btn.dataset.id)confirmDeleteTopic(parseInt(btn.dataset.id));
+      });
+    });
+    el.addEventListener('click',()=>selectTopic(el.dataset.id!=null?parseInt(el.dataset.id):null,el.dataset.name));
+  });
+}
+
+function resolveUploadTopic(){
+  const sel=$('uploadTopic');
+  if(!sel)return '';
+  if(sel.value==='__new__'){
+    const nt=$('uploadNewTopic');
+    return nt?nt.value.trim():'';
+  }
+  return sel.value||'';
+}
+
+async function createTopic(){
+  const name=$('newTopicName').value.trim();
+  if(!name){alert('Escribe un nombre para el tema.');return;}
+  const btn=$('createTopicBtn');btn.disabled=true;
+  try{
+    const r=await fetch('/api/topics/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name})
+    });
+    const d=await r.json();
+    if(r.status===409){alert(d.error);}
+    else if(!r.ok){alert(d.error||'Error al crear el tema.');}
+    else{
+      $('newTopicName').value='';
+      selectTopic(d.id, d.name);
+      loadDocs();
+    }
+    loadTopics();
+  }catch(e){alert('Error de red al crear el tema.');}
+  finally{btn.disabled=false;}
+}
+
+async function renameTopic(id){
+  const item=$('topicItem-'+id);
+  const cur=item?item.dataset.name:'';
+  const nuevo=prompt('Nuevo nombre para el tema:',cur);
+  if(nuevo===null)return;
+  const name=nuevo.trim();
+  if(!name)return;
+  try{
+    const r=await fetch('/api/topics/'+id+'/',{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name})
+    });
+    const d=await r.json();
+    if(!r.ok){alert(d.error||'No se pudo renombrar el tema.');return;}
+    loadTopics();
+  }catch(e){alert('Error al renombrar el tema.');}
+}
+
+async function confirmDeleteTopic(id){
+  const item=$('topicItem-'+id);
+  const name=item?item.dataset.name:'';
+  if(!confirm('¿Eliminar el tema «'+(name||id)+'»?\n\nLos documentos y conversaciones de ese tema quedarán sin tema asignado, pero no se borrarán.'))return;
+  try{
+    const r=await fetch('/api/topics/'+id+'/',{method:'DELETE'});
+    if(!r.ok){alert('No se pudo eliminar el tema.');return;}
+    loadTopics();
+    loadDocs();
+  }catch(e){alert('Error al eliminar el tema.');}
+}
+
+function selectTopic(id,name){
+  const item=id!=null?$('topicItem-'+id):null;
+  const tname=(item?item.dataset.name:'')||name;
+  const sel=$('topicInput');
+  if(tname&&sel){
+    sel.value=tname;
+    switchTopicOrAgent();
+  }
+  loadTopics();
+}
+
+async function sendQuestion(){
+  const q=$('qInput').value.trim();if(!q||polling)return;
+  const history=$('useHistory').checked?conversationHistory:[];
+  const useSSE=$('useStream').checked;
+  const docIds=Array.from($('docFilter').selectedOptions).map(o=>parseInt(o.value));
+  $('qInput').value='';
+  addMsg(esc(q),'user');
+  showTyping('Buscando en el corpus y generando…');
+  polling=true;$('sendBtn').disabled=true;
+  try{
+    const body={question:q};
+    if(history.length)body.history=history;
+    if(docIds.length)body.document_ids=docIds;
+    const topic=$('topicInput').value;
+    if(topic)body.topic=topic;
+    const agentId=$('agentSelector').value;
+    if(agentId)body.agent_id=parseInt(agentId);
+    const r=await fetch('/api/query/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    if(!r.ok){
+      hideTyping();
+      addMsg('Error al encolar la pregunta ('+r.status+').','err');
+      return;
+    }
+    const {task_id}=await r.json();
+    // Save user question to conversation
+    if($('useHistory').checked){
+      conversationHistory.push({role:'user',content:q});
+      await saveMessage('user',q);
+    }
+    if(useSSE){connectSSE(task_id);}
+    else{
+      const res=await pollResult(task_id);
+      hideTyping();
+      renderResult(res);
+      if($('useHistory').checked){
+        conversationHistory.push({role:'assistant',content:res.answer||''});
+        await saveMessage('assistant',res.answer||'');
+      }
+    }
+  }catch(err){hideTyping();addMsg('Error de red.','err');}
+  finally{if(!useSSE){finishQuery();}}
+}
+
+async function pollResult(taskId){
+  for(let i=0;i<120;i++){
+    const r=await fetch('/api/query/'+taskId+'/');
+    const d=await r.json();
+    if(d.status==='done')return d.result;
+    if(d.status==='error')return {answer:'La tarea falló: '+(d.error||''),sources:[],degraded:true};
+    await new Promise(res=>setTimeout(res,2000));
+  }
+  return {answer:'Se agotó el tiempo de espera.',sources:[],degraded:true};
+}
+
+function filterDocList(){
+  const term=$('docSearch').value.toLowerCase();
+  Array.from($('docList').querySelectorAll('.doc')).forEach(d=>{
+    const name=d.querySelector('.name').textContent.toLowerCase();
+    d.style.display=name.includes(term)?'flex':'none';
+  });
+}
+
+_('uploadBtn').addEventListener('click',()=>{
+  _('fileInput').click();
+});
+_('fileInput').addEventListener('change',()=>{
+  if(_('fileInput').files && _('fileInput').files[0]){
+    upload();
+  }
+});
+_('urlBtn').addEventListener('click',addUrl);
+_('urlInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addUrl();}});
+$('sendBtn').addEventListener('click',sendQuestion);
+$('qInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendQuestion();}});
+$('reindexBtn').addEventListener('click',reindexAll);
+$('clearDataBtn').addEventListener('click',clearAllData);
+$('docSearch').addEventListener('input',filterDocList);
+$('docList').addEventListener('change',e=>{
+  if(e.target.matches('.doc-filter-cb')){
+    const opt=$('docFilter').querySelector('option[value="'+e.target.value+'"]');
+    if(opt)opt.selected=e.target.checked;
+  }
+});
+$('topicInput').addEventListener('change',switchTopicOrAgent);
+$('agentSelector').addEventListener('change',switchTopicOrAgent);
+$('newSessionBtn').addEventListener('click',newSession);
+$('saveSessionBtn').addEventListener('click',saveSession);
+$('createTopicBtn').addEventListener('click',createTopic);
+$('newTopicName').addEventListener('keydown',e=>{if(e.key==='Enter')createTopic();});
+const _stf=$('sessionTopicFilter');
+if(_stf)_stf.addEventListener('change',loadSessions);
+const _ut=$('uploadTopic');
+if(_ut)_ut.addEventListener('change',()=>{
+  const show=_ut.value==='__new__';
+  $('uploadNewTopic').disabled=!show;
+  if(show)$('uploadNewTopic').focus();
+});
+
+health();loadDocs();loadAgents();loadTopics();loadOrCreateConversation();
+setInterval(health,15000);setInterval(loadDocs,20000);
+</script>
+</body>
+</html>

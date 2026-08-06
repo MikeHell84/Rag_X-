@@ -1,0 +1,17 @@
+[
+  {
+    "question": "¿Cuántos días de vacaciones tienen los empleados?",
+    "relevant_chunk_ids": [],
+    "expected_answer": "Los empleados tienen derecho a 22 días laborables de vacaciones anuales."
+  },
+  {
+    "question": "¿Cuál es la política de trabajo remoto?",
+    "relevant_chunk_ids": [],
+    "expected_answer": "El trabajo remoto está permitido hasta 2 días por semana con autorización del responsable."
+  },
+  {
+    "question": "¿Cómo se solicitan los permisos?",
+    "relevant_chunk_ids": [],
+    "expected_answer": "Los permisos se solicitan a través del portal de RRHH con al menos 5 días de antelación."
+  }
+]

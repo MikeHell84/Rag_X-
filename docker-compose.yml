@@ -1,0 +1,139 @@
+name: rag-empresarial
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: rag_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rag}
+      POSTGRES_USER: ${POSTGRES_USER:-rag}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rag}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rag} -d ${POSTGRES_DB:-rag}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    container_name: rag_redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build: ./backend
+    container_name: rag_migrate
+    restart: "no"
+    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput"
+    environment:
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_DEBUG: "0"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./backend
+    container_name: rag_web
+    restart: unless-stopped
+    command: sh -c "python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 4 --timeout 120 --access-logfile -"
+    volumes:
+      - rag_storage:/app/storage
+      - rag_media:/app/media
+    environment:
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: "*"
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: ./backend
+    container_name: rag_worker
+    restart: unless-stopped
+    command: celery -A config worker --queues=embeddings,llm,ingestion --concurrency=4 --max-tasks-per-child=50 --loglevel=INFO
+    volumes:
+      - rag_storage:/app/storage
+      - rag_media:/app/media
+    environment:
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_DEBUG: "0"
+    env_file:
+      - .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  beat:
+    build: ./backend
+    container_name: rag_beat
+    restart: unless-stopped
+    command: celery -A config beat --schedule=/app/storage/celerybeat-schedule --loglevel=INFO
+    volumes:
+      - rag_storage:/app/storage
+    environment:
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_DEBUG: "0"
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  flower:
+    build: ./backend
+    container_name: rag_flower
+    restart: unless-stopped
+    command: celery -A config flower --port=5555 --basic-auth=admin:${FLOWER_PASSWORD:-admin}
+    ports:
+      - "5555:5555"
+    environment:
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  admin:
+    build: ./frontend
+    container_name: rag_admin
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      web:
+        condition: service_started
+
+volumes:
+  pgdata:
+  redisdata:
+  rag_storage:
+  rag_media:
