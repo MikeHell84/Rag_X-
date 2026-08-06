@@ -1,6 +1,6 @@
-<div align="center">
+﻿<div align="center">
 
-# 🧠 Asistente RAG Empresarial
+# Asistente RAG Empresarial
 
 **Un sistema de *Retrieval-Augmented Generation* corporativo con arquitectura robusta, escalable y lista para producción.**
 
@@ -10,22 +10,22 @@ RAG + búsqueda híbrida + chunking semántico + re-ranking con LLM, sobre Postg
 
 ---
 
-## 📋 Índice
+## Índice
 
-- [Título y Descripción](#-título-y-descripción)
-- [Stack Tecnológico](#-stack-tecnológico)
-- [Arquitectura del Sistema](#-arquitectura-del-sistema)
-- [Estrategia de Chunking Avanzada](#-estrategia-de-chunking-avanzada)
-- [Búsqueda Híbrida y Re-ranking](#-búsqueda-híbrida-y-re-ranking)
-- [Gestión de Concurrencia y Errores](#-gestión-de-concurrencia-y-errores)
-- [Despliegue con Docker](#-despliegue-con-docker)
-- [Casos de Uso y Ejemplo de Flujo](#-casos-de-uso-y-ejemplo-de-flujo)
-- [Optimización de Costos y Tokens](#-optimización-de-costos-y-tokens)
-- [Conclusión](#-conclusión)
+- [Título y Descripción](#título-y-descripción)
+- [Stack Tecnológico](#stack-tecnológico)
+- [Arquitectura del Sistema](#arquitectura-del-sistema)
+- [Estrategia de Chunking Avanzada](#estrategia-de-chunking-avanzada)
+- [Búsqueda Híbrida y Re-ranking](#búsqueda-híbrida-y-re-ranking)
+- [Gestión de Concurrencia y Errores](#gestión-de-concurrencia-y-errores)
+- [Despliegue con Docker](#despliegue-con-docker)
+- [Casos de Uso y Ejemplo de Flujo](#casos-de-uso-y-ejemplo-de-flujo)
+- [Optimización de Costos y Tokens](#optimización-de-costos-y-tokens)
+- [Conclusión](#conclusión)
 
 ---
 
-## 🏷️ Título y Descripción
+## Título y Descripción
 
 **Asistente RAG Empresarial** es un asistente conversacional de *Retrieval-Augmented Generation* (RAG) diseñado para entornos corporativos. Permite subir documentación (PDF, DOCX, Markdown, texto e ingestión por URL), organizarla en **temas aislados** y consultarla mediante lenguaje natural con respuestas fundamentadas en las fuentes, incluyendo citas, métricas de costo y latencia reales.
 
@@ -38,7 +38,7 @@ Propósito y diferenciación:
 
 ---
 
-## 🛠️ Stack Tecnológico
+## Stack Tecnológico
 
 | Capa | Tecnología |
 |---|---|
@@ -69,28 +69,28 @@ trafilatura>=1.8.0            # ingestión por URL
 
 ---
 
-## 🧬 Arquitectura del Sistema
+## Arquitectura del Sistema
 
 El sistema está diseñado con **separación de responsabilidades** para escalar de forma independiente cada componente.
 
 ```
-                    ┌────────────────────────────┐
-                    │      Frontend Admin        │  nginx · :3000
-                    └────────────┬───────────────┘
-                                 │ API REST (Django REST Framework)
-┌───────────────┐   enqueue  ┌───▼────────────────┐
-│  WEB  gunicorn ┼──────────►│      Redis         │   broker · :6379
-│ :8000 (3 wk)   │           │  (colas + caché)    │
-└───────┬───────┘            └───┬────────────────┘
-        │ GET/POST               │ Celery worker
-        │ sync                   │ ┌─────────────────────────────────┐
-┌───────▼────────────────────┐    │ │  worker (concurrency=4)         │
-│  PostgreSQL 16 + pgvector   │◄───┼│  colas: ingestion · embeddings  │
-│  (chunk_embeddings · HNSW)  │    │ │  · llm                        │
-└────────────────────────────┘    │ │  + beat (tareas programadas)    │
-                                 │ └─────────────────────────────────┘
-                                 │            ▲ Flower · :5555
-                                 └────────────┘ (monitor de colas)
+                     +------------------------------+
+                     |       Frontend Admin         |  nginx :3000
+                     +--------------+---------------+
+                                    | API REST (Django REST Framework)
++---------------+   enqueue  +-----v------------------+
+|  WEB  gunicorn +---------->+       Redis            +   broker :6379
+| :8000 (3 wk)   |           |  (colas + cache)       |
++-------+--------+           +-----+------------------+
+        | GET/POST                 | Celery worker
+        | sync                     | +---------------------------------+
++-------v----------------------+   | |  worker (concurrency=4)        |
+|  PostgreSQL 16 + pgvector    |<--+-|  colas: ingestion, embeddings  |
+|  (chunk_embeddings, HNSW)    |   | |  y llm                         |
++------------------------------+   | |  + beat (tareas programadas)   |
+                                  | +---------------------------------+
+                                  |          Flower :5555 (monitor)
+                                  +-----------------------------------+
 ```
 
 ### Justificación de diseño
@@ -102,12 +102,12 @@ El sistema está diseñado con **separación de responsabilidades** para escalar
 
 ---
 
-## 📐 Estrategia de Chunking Avanzada
+## Estrategia de Chunking Avanzada
 
 Los documentos se fragmentan **respetando la semántica** y la estructura interna, no por cortes ciegos de caracteres. El pipeline (`backend/core/chunking.py`) tiene 4 etapas:
 
 1. **Extracción estructurada** con detección de encabezados (nivel de heading por tamaño de fuente en PDF, estilos `Heading*` en DOCX, regex de encabezados en Markdown/TXT).
-2. **`SectionAwareSplitter`**: agrupa contenido por sección; subdivide por párrafos → frases → *RecursiveCharacterTextSplitter* sin cortar nunca una frase a la mitad.
+2. **`SectionAwareSplitter`**: agrupa contenido por sección; subdivide por párrafos, luego frases, y por último *RecursiveCharacterTextSplitter* sin cortar nunca una frase a la mitad.
 3. **`SemanticDriftGuard`**: al fusionar fragmentos pequeños adyacentes, compara la **similitud coseno** del borde: si baja de un umbral (`threshold`, drift semántico), corta aunque quede presupuesto.
 4. **`HybridChunker`** orquesta `. Los parámetros por defecto: `chunk_size=800` tokens, `chunk_overlap=80`, `min_chunk=120`.
 
@@ -143,11 +143,11 @@ class SemanticDriftGuard:
         # Si el embedding lanza excepción, se desactiva sin abortar la ingesta.
 ```
 
-> ✍️ **Lógica personalizada** en `core/chunking.py` evitando depender de heurísticas genéricas; el respaldo con `langchain-text-splitters` solo se usa cuando no hay una subdivisión estructural disponible. Nunca se corta una frase cuando existe un separador.
+> **Lógica personalizada** en `core/chunking.py` evitando depender de heurísticas genéricas; el respaldo con `langchain-text-splitters` solo se usa cuando no hay una subdivisión estructural disponible. Nunca se corta una frase cuando existe un separador.
 
 ---
 
-## 🔍 Búsqueda Híbrida y Re-ranking
+## Búsqueda Híbrida y Re-ranking
 
 El pipeline de consulta combina **búsqueda vectorial** (semántica) y **búsqueda léxica** (BM25), funde los rankings por **RRF** y aplica **re-ranking con LLM** para afinar la relevancia.
 
@@ -199,7 +199,7 @@ scores = parse_json_block(scores_json)["scores"]
 
 ---
 
-## ⚙️ Gestión de Concurrencia y Errores
+## Gestión de Concurrencia y Errores
 
 El servidor web **nunca ejecuta cómputo pesado**. La consulta se encola y el worker la procesa de forma asíncrona, con reintentos inteligentes y degradación elegante.
 
@@ -215,7 +215,7 @@ def generate_answer(self, question, top_k=None, model=None, document_ids=None, h
         publish_stage(task_id, "done", result)
         return result
     except Exception as exc:
-        if is_transient_error(exc):                      # 408, 429, 5xx → reintentable
+        if is_transient_error(exc):                      # 408, 429, 5xx: reintentable
             if self.request.retries >= self.max_retries:
                 return _degraded_response(question, exc) # respuesta degradada final
             raise self.retry(exc=exc, countdown=exponential_backoff(self.request.retries))
@@ -235,7 +235,7 @@ def exponential_backoff(retries, base=2.0, cap=120.0):
 
 ---
 
-## 🐳 Despliegue con Docker
+## Despliegue con Docker
 
 ### `docker-compose.yml` (7 servicios)
 
@@ -310,11 +310,11 @@ open http://localhost:8000        # Asistente Web
 open http://localhost:3000        # Panel de gestión
 ```
 
-> Nota: la ingestion de imágenes/PDF escaneados requiere Tesseract (instalado en la imagen con `tesseract-ocr-spa`) y `poppler-utils` para PDF→imagen.
+> Nota: la ingestion de imágenes/PDF escaneados requiere Tesseract (instalado en la imagen con `tesseract-ocr-spa`) y `poppler-utils` para PDF a imagen.
 
 ---
 
-## 🧾 Casos de Uso y Ejemplo de Flujo
+## Casos de Uso y Ejemplo de Flujo
 
 ### 1. El usuario sube/documents o un enlace
 
@@ -330,7 +330,7 @@ curl -X POST http://localhost:8000/api/documents/from-url/ \
   -d '{"url": "https://www.datacamp.com/es/blog/how-to-become-computer-programmer", "topic": "Tecnologia"}'
 ```
 
-La ingesta se encola (`DocumentUploadView` → tarea `ingest_document`): un DAG Celery con `chord` fragmenta y embede los chunks en paralelo, actualiza pgvector **y** Whoosh, y marca el documento `READY` o `FAILED`.
+La ingesta se encola (`DocumentUploadView` hacia la tarea `ingest_document`): un DAG Celery con `chord` fragmenta y embebe los chunks en paralelo, actualiza pgvector **y** Whoosh, y marca el documento `READY` o `FAILED`.
 
 ### 2. Búsqueda híbrida
 
@@ -365,11 +365,11 @@ El endpoint responde `202` con un `task_id`; el worker ejeEC búsqueda híbrida 
 
 ---
 
-## 💰 Optimización de Costos y Tokens
+## Optimización de Costos y Tokens
 
 | Estrategia | Implementación |
 |---|---|
-| **Caché de embeddings** | `@lru_cache(maxsize=2048)` por hash de texto en `EmbeddingService.embed` → no se re-generan embeddings repetidos. |
+| **Caché de embeddings** | `@lru_cache(maxsize=2048)` por hash de texto en `EmbeddingService.embed`: no se re-generan embeddings repetidos. |
 | **Presupuesto de contexto** | `_build_messages` recorta iterativamente el contexto al presupuesto (`max_context_tokens`) antes de llamar al LLM. |
 | **Re-ranking con presupuesto** | `LLMReranker` trunca candidatos a 1200 caracteres y calcula el contexto disponible dinámicamente. |
 | **Telemetría de costo** | `MODEL_PRICING_USD_PER_1M` calcula el costo real por tokens y lo registra en `QueryLog`. |
@@ -379,7 +379,7 @@ El endpoint responde `202` con un `task_id`; el worker ejeEC búsqueda híbrida 
 
 ---
 
-## 🏁 Conclusión
+## Conclusión
 
 Este proyecto demuestra experiencia real en **IA aplicada a producción**, no una implementación básica de RAG:
 
@@ -393,6 +393,6 @@ La diferencia frente a *implementaciones básicas de RAG* (naive split + cosine 
 
 ---
 
-## 📄 Licencia
+## Licencia
 
 Proyecto interno del equipo. Uso restringido a los términos establecidos por la organización.
