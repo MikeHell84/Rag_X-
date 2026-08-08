@@ -6,11 +6,13 @@ siglas y números que los embeddings difuminan. El índice vive en disco
 """
 
 import os
+import time
 import threading
 from typing import List
 
 from whoosh import index, query as whoosh_q
 from whoosh.fields import NUMERIC, TEXT, Schema
+from whoosh.index import LockError
 from whoosh.qparser import MultifieldParser, OrGroup
 
 SCHEMA = Schema(
@@ -36,27 +38,58 @@ class BM25Index:
                 self._ix = index.create_in(self.index_dir, SCHEMA)
         return self._ix
 
+    def _clear_stale_lock(self):
+        lock_path = os.path.join(self.index_dir, "MAIN_WRITELOCK")
+        try:
+            if os.path.exists(lock_path) and os.path.getsize(lock_path) == 0:
+                stat = os.stat(lock_path)
+                age = time.time() - stat.st_mtime
+                if age > 60:
+                    os.remove(lock_path)
+                    self._ix = None
+        except Exception:
+            pass
+
+    def _with_retry(self, fn, retries=3, delay=0.5):
+        for attempt in range(retries):
+            try:
+                return fn()
+            except LockError:
+                if attempt < retries - 1:
+                    self._clear_stale_lock()
+                    time.sleep(delay * (attempt + 1))
+                    continue
+                raise
+            except Exception:
+                raise
+
     def upsert_chunk(self, chunk_id: int, document_id: int, content: str) -> None:
         with self._lock:
-            writer = self.ix.writer()
-            writer.update_document(
-                chunk_id=int(chunk_id),
-                document_id=int(document_id),
-                content=content,
-            )
-            writer.commit()
+            def _do():
+                writer = self.ix.writer()
+                writer.update_document(
+                    chunk_id=int(chunk_id),
+                    document_id=int(document_id),
+                    content=content,
+                )
+                writer.commit()
+            self._with_retry(_do)
 
     def delete_chunk(self, chunk_id: int) -> None:
         with self._lock:
-            writer = self.ix.writer()
-            writer.delete_by_term("chunk_id", int(chunk_id))
-            writer.commit()
+            def _do():
+                writer = self.ix.writer()
+                writer.delete_by_term("chunk_id", int(chunk_id))
+                writer.commit()
+            self._with_retry(_do)
 
     def delete_document(self, document_id: int) -> None:
         with self._lock:
-            writer = self.ix.writer()
-            writer.delete_by_term("document_id", int(document_id))
-            writer.commit()
+            def _do():
+                writer = self.ix.writer()
+                writer.delete_by_term("document_id", int(document_id))
+                writer.commit()
+            self._with_retry(_do)
 
     def delete_all_documents(self) -> None:
         with self._lock:
@@ -64,7 +97,6 @@ class BM25Index:
 
             shutil.rmtree(self.index_dir, ignore_errors=True)
             self._ix = None
-            # Force recreate
             _ = self.ix
 
     def search(self, query_text: str, limit: int = 20, document_ids: List[int] | None = None) -> List[dict]:

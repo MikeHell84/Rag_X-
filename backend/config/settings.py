@@ -21,7 +21,16 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-key-cambiar-en-pr
 DEBUG = env_bool("DJANGO_DEBUG", True)
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
-CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+# Orígenes/servicios autorizados a hacer cross-origin requests (incluye el
+# Dashboard BI que consume este API). Agregar aquí los hosts internos de Docker
+# (rag_web) cuando el query provenga de otro stack.
+_DEFAULT_CSRF = (
+    "http://localhost:3000,http://127.0.0.1:3000,"
+    "http://rag_web:8000,http://rag_admin:80,"
+    "http://host.docker.internal:8000,http://host.docker.internal:3000,"
+    "http://bi_backend:8000"
+)
+CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", _DEFAULT_CSRF).split(",")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -42,7 +51,9 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    # CSRF exento para /api/ (consumido por Dashboard BI y otros clientes
+    # server-to-server que no manejan cookies). /admin/ conserva protección.
+    "core.middleware.ApiCsrfExemptMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",

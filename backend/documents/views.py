@@ -193,6 +193,35 @@ class DocumentDetailView(APIView):
 
         return Response({"deleted": True, "title": title})
 
+    def patch(self, request, document_id):
+        try:
+            document = _tenant_queryset(request).get(pk=document_id)
+        except Document.DoesNotExist:
+            return Response({"error": "Documento no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+        allowed_fields = {"title", "topic", "url"}
+        update_fields = []
+
+        if "title" in request.data:
+            document.title = request.data["title"]
+            update_fields.append("title")
+
+        if "topic" in request.data:
+            document.topic = request.data["topic"]
+            update_fields.append("topic")
+
+        if "url" in request.data:
+            if not document.metadata:
+                document.metadata = {}
+            document.metadata["url"] = request.data["url"]
+            update_fields.append("metadata")
+
+        if update_fields:
+            update_fields.append("updated_at")
+            document.save(update_fields=update_fields)
+
+        return Response(DocumentSerializer(document).data)
+
 
 class DocumentRetryView(APIView):
     throttle_scope = "upload"

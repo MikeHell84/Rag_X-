@@ -44,6 +44,42 @@ export interface PlatformConfig {
   use_semantic_guard: boolean
 }
 
+export interface DocumentDoc {
+  id: number
+  title: string
+  source_type: string
+  status: string
+  status_display: string
+  total_chunks: number
+  total_tokens: number
+  error_message?: string
+  task_id?: string
+  topic?: string
+  url?: string
+  markdown_url?: string
+  created_at: string
+  updated_at: string
+  metadata?: Record<string, any>
+}
+
+export interface ConversationMessage {
+  id: number
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  created_at: string
+}
+
+export interface Conversation {
+  id: number
+  title: string
+  topic?: string
+  agent_id?: number
+  session_key?: string
+  created_at: string
+  updated_at: string
+  messages?: ConversationMessage[]
+}
+
 export const TYPE_LABEL: Record<AgentType, string> = {
   chat: 'Generación (LLM)',
   embedding: 'Embeddings',

@@ -53,7 +53,7 @@ class EmbeddingService:
         self.use_breaker = use_breaker
         self.embedding_dim = embedding_dim
         self._client = None
-        self.breaker = CircuitBreaker(name=f"embeddings.{self.provider}")
+        self.breaker = CircuitBreaker(name=f"embeddings.{self.provider}", cooldown_seconds=60.0)
 
     @property
     def client(self):

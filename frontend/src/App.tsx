@@ -4,8 +4,19 @@ import type { Agent, AgentType } from './types'
 import AgentCard from './components/AgentCard'
 import AgentForm from './components/AgentForm'
 import PlatformConfigForm from './components/PlatformConfigForm'
+import ChatQuery from './components/ChatQuery'
+import DocumentsList from './components/DocumentsList'
+import ChatDocuments from './components/ChatDocuments'
 
-type Tab = 'agents' | 'config'
+type Tab = 'agents' | 'search' | 'chat' | 'documents' | 'docs_chat'
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'agents', label: 'Agentes IA' },
+  { key: 'search', label: 'Búsqueda' },
+  { key: 'chat', label: 'Chat' },
+  { key: 'documents', label: 'Documentos' },
+  { key: 'docs_chat', label: 'Chat y documentos' }
+]
 
 const FILTERS: { key: AgentType | 'all'; label: string }[] = [
   { key: 'all', label: 'Todos' },
@@ -45,8 +56,15 @@ export default function App() {
       <header className="top">
         <h1>Panel de Administración · RAG</h1>
         <nav className="tabs">
-          <button className={tab === 'agents' ? 'on' : ''} onClick={() => setTab('agents')}>Agentes IA</button>
-          <button className={tab === 'config' ? 'on' : ''} onClick={() => setTab('config')}>Búsqueda</button>
+          {TABS.map((t) => (
+            <button key={t.key} className={tab === t.key ? 'on' : ''} onClick={() => setTab(t.key)}>
+              {t.label}
+            </button>
+          ))}
+        </nav>
+        <nav className="jumps">
+          <a href="http://localhost:8080" target="_blank" rel="noreferrer">Dashboard</a>
+          <a href="http://localhost:8501" target="_blank" rel="noreferrer">Pipeline</a>
         </nav>
       </header>
 
@@ -75,9 +93,21 @@ export default function App() {
             </div>
           )}
         </main>
-      ) : (
+      ) : tab === 'search' ? (
         <main className="agents">
           <PlatformConfigForm />
+        </main>
+      ) : tab === 'chat' ? (
+        <main className="agents">
+          <ChatQuery />
+        </main>
+      ) : tab === 'documents' ? (
+        <main className="agents">
+          <DocumentsList />
+        </main>
+      ) : (
+        <main className="agents">
+          <ChatDocuments />
         </main>
       )}
 

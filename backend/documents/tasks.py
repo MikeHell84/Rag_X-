@@ -111,8 +111,11 @@ def _batch_size() -> int:
     return get_platform_config()["embed_batch_size"]
 
 
-@shared_task(bind=True, max_retries=3, acks_late=True)
+@shared_task(bind=True, max_retries=8, acks_late=True)
 def embed_chunks_batch(self, chunk_ids: List[int]) -> dict:
+    import time as _time
+    _time.sleep(random.uniform(5.0, 10.0))
+
     chunks = list(Chunk.objects.filter(id__in=chunk_ids))
     if not chunks:
         return {"ok": True, "embedded": 0}

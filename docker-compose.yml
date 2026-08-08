@@ -73,7 +73,7 @@ services:
     build: ./backend
     container_name: rag_worker
     restart: unless-stopped
-    command: celery -A config worker --queues=embeddings,llm,ingestion --concurrency=4 --max-tasks-per-child=50 --loglevel=INFO
+    command: celery -A config worker --queues=embeddings,llm,ingestion --concurrency=1 --max-tasks-per-child=50 --loglevel=INFO
     volumes:
       - rag_storage:/app/storage
       - rag_media:/app/media

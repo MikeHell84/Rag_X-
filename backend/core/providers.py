@@ -231,8 +231,12 @@ def is_transient_error(exc: Exception) -> bool:
 
     El usuario ve "degradado" si persisten; no es un error de configuración.
     """
+    from .circuit_breaker import CircuitOpenError
+
     if isinstance(exc, ProviderConfigError):
         return False
+    if isinstance(exc, CircuitOpenError):
+        return True
     status = getattr(exc, "status_code", None)
     if isinstance(status, int):
         return status in (408, 429) or 500 <= status < 600

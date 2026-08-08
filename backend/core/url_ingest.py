@@ -78,6 +78,12 @@ def _download(url: str, timeout: int, headers: dict) -> requests.Response:
             if resp.status_code in (403, 429, 401):
                 resp.close()
                 continue  # probar otro User-Agent
+            if resp.status_code == 410:
+                resp.close()
+                raise UrlFetchError(
+                    "La página fue eliminada por el sitio web (HTTP 410 Gone). "
+                    "Busca la versión más reciente o usa otra URL."
+                )
             resp.raise_for_status()
             return resp
         except requests.exceptions.RequestException as exc:
@@ -140,8 +146,34 @@ def fetch_markdown(
         output_format="markdown",
     )
     markdown = (extracted or "").strip()
+
+    # --- Fallbacks: Google Cache → Wayback Machine ---
     if not markdown:
-        raise UrlFetchError("No se pudo extraer texto legible de la URL (página vacía o JS-only).")
+        for fallback_url in _fallback_urls(url):
+            try:
+                resp2 = _download(fallback_url, timeout, DEFAULT_HEADERS)
+                ct2 = resp2.headers.get("Content-Type", "").lower()
+                raw2 = b"".join(resp2.iter_content(chunk_size=65536))
+                html2 = _decode(raw2, ct2)
+                extracted2 = trafilatura.extract(
+                    html2,
+                    include_comments=False,
+                    include_tables=True,
+                    favor_precision=0.4,
+                    include_links=True,
+                    output_format="markdown",
+                )
+                markdown = (extracted2 or "").strip()
+                if markdown:
+                    break
+            except Exception:
+                continue
+
+    if not markdown:
+        raise UrlFetchError(
+            "No se pudo extraer texto de la URL. "
+            "Posibles causas: la página requiere JavaScript para mostrarse, "
+        )
 
     title = _title_of(url, html)
     digest = hashlib.sha256(url.encode("utf-8")).hexdigest()[:16]
@@ -153,6 +185,14 @@ def fetch_markdown(
     path.write_text(markdown, encoding="utf-8")
 
     return path, markdown, title
+
+
+def _fallback_urls(url: str) -> list[str]:
+    """Devuelve URLs alternativas para intentar cuando la original falla."""
+    return [
+        f"https://webcache.googleusercontent.com/search?q=cache:{url}",
+        f"https://web.archive.org/web/2024/{url}",
+    ]
 
 
 def source_is_binary(content_type: str, url: str) -> bool:
